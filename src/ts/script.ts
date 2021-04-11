@@ -72,16 +72,17 @@ var config = {
 const CAMERA_SPEED = 0.05;
 const CAMERA_SMOOTHNESS = 0.05;
 const CAMERA_INITIAL_POSITION = 750;
+const CAMERA_OFFSET = 200;
 
-const CHICKEN_INTERVAL_MS = 900;
+const CHICKEN_INTERVAL_MS = 500;
 const CHICKEN_SIZE = 100;
 const CHICKEN_TARGET_Y = {
   max: config.height - 300,
-  min: -config.height - CHICKEN_SIZE,
+  min: -config.height - CHICKEN_SIZE - 1000,
 };
 const CHICKEN_WING_FORCE = { x: 0.03, y: -0.5 };
 const CHICKEN_SPAWN_OFFSET = 0;
-const CHICKEN_MIN_SPAWN_HEIGHT = 800;
+const CHICKEN_MIN_SPAWN_HEIGHT = 1000;
 
 const PLAYER_WIDTH = 100;
 const PLAYER_HEIGHT = 150;
@@ -217,7 +218,7 @@ function updateCamera(delta) {
   if (this.players.length) {
     let Ymean = Phaser.Math.Average(
       this.players.map((player) =>
-        Math.min(player.position.y, CAMERA_INITIAL_POSITION)
+        Math.min(player.position.y - CAMERA_OFFSET, CAMERA_INITIAL_POSITION)
       )
     );
 
@@ -511,17 +512,16 @@ function generateChicken(initial = false) {
     CHICKEN_TARGET_Y.max + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET
   );
 
-  if (initial) {
-    targetY -= config.height;
-  }
-
   if (targetY > CHICKEN_MIN_SPAWN_HEIGHT) {
     return;
   }
 
-  var chickenX = initial
-    ? rnd.between(-CHICKEN_SIZE, config.width + CHICKEN_SIZE)
-    : rnd.pick([-CHICKEN_SIZE, config.width + CHICKEN_SIZE]);
+  var chickenX =
+    targetY < this.cameras.main.scrollY - CHICKEN_SIZE || initial
+      ? rnd.between(-CHICKEN_SIZE, config.width + CHICKEN_SIZE)
+      : rnd.pick([-CHICKEN_SIZE, config.width + CHICKEN_SIZE]);
+
+  console.log(chickenX, targetY);
 
   var chicken = this.matter.add.circle(
     chickenX,
@@ -625,7 +625,7 @@ function createWater() {
 }
 
 function updateWater(delta) {
-  this.water.y -= delta * (WATER_SPEED + this.players[0]._score.points / 10000);
+  this.water.y -= delta * (WATER_SPEED + this.players[0]._score.points / 50000);
 }
 
 function end() {
