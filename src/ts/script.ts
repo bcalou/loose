@@ -569,10 +569,6 @@ function createChickens() {
 }
 
 function generateChicken(initial = false) {
-  if (!this.gameIsActive) {
-    return;
-  }
-
   var targetY = Phaser.Math.Between(
     CHICKEN_TARGET_Y.min + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET,
     CHICKEN_TARGET_Y.max + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET
