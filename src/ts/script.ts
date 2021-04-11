@@ -1,4 +1,4 @@
-import 'phaser';
+import "phaser";
 /**
  *
  * !!!OK!!! capter les inputs manette
@@ -57,8 +57,8 @@ var config = {
       gravity: {
         y: 0.8,
       },
-      debug: true,
-      debugBodyColor: 0xffffff,
+      // debug: true,
+      // debugBodyColor: 0xffffff,
     },
   },
   scene: {
@@ -89,7 +89,8 @@ const PLAYER_DEATH_OFFSET = 100;
 const PLAYER_JUMP_RATIO = 0.5;
 
 const MAX_GRABBER_DISTANCE = 900;
-const GRABBER_THROW_FORCE = 0.03;
+const GRABBER_THROW_FORCE = 0.1;
+const GRABBER_AIR_FRICTION = 0.1;
 
 const SPRING_ATTACHMENT_RATIO = 0.9; // between 0 & 1
 const SPRING_ADJUSTMENT_SPEED = 350;
@@ -140,6 +141,8 @@ function preload() {
 }
 
 function create() {
+  this.graphics = this.add.graphics();
+
   this.mainGroup = this.matter.world.nextGroup(true);
   this.chickenCat = this.matter.world.nextCategory();
   this.playerCat = this.matter.world.nextCategory();
@@ -151,13 +154,13 @@ function create() {
     .text(32, 32)
     .setScrollFactor(0)
     .setFontSize(32)
-    .setColor('#000000');
+    .setColor("#000000");
 
   this.endText = this.add
     .text(config.width / 2 - 250, config.height / 2 - 100)
     .setScrollFactor(0)
     .setFontSize(64)
-    .setColor('#000000');
+    .setColor("#000000");
 
   createAnimations.call(this);
   createScene.call(this);
@@ -212,6 +215,7 @@ function create() {
 }
 
 function update(time, delta) {
+  this.graphics.clear();
   updatePlayers.call(this, delta);
   if (Math.random() < delta / CHICKEN_INTERVAL_MS) {
     generateChicken.call(this);
@@ -343,6 +347,23 @@ function updatePlayerSprite(player) {
       player._grabber.position.x,
       player._grabber.position.y
     );
+    this.graphics.lineStyle(5, 0x7c5321, 1);
+    this.graphics.lineBetween(
+      player.position.x,
+      player.position.y,
+      player._grabber.position.x,
+      player._grabber.position.y
+    );
+  }
+  if (player._spring) {
+    console.log(player._spring);
+    this.graphics.lineStyle(5, 0x7c5321, 1);
+    this.graphics.lineBetween(
+      player._spring.bodyA.position.x + player._spring.pointA.x,
+      player._spring.bodyA.position.y + player._spring.pointA.y,
+      player._spring.bodyB.position.x + player._spring.pointB.x,
+      player._spring.bodyB.position.y + player._spring.pointB.y
+    );
   }
 }
 
@@ -422,6 +443,7 @@ function createPlayer(pad, index) {
     {
       collisionFilter: {
         category: this.playerCat,
+        mask: ~this.chickenCat,
       },
     }
   );
@@ -451,6 +473,7 @@ function fire(player) {
     player.position.y,
     10,
     {
+      frictionAir: GRABBER_AIR_FRICTION,
       collisionFilter: {
         category: this.stickyCat,
         mask: this.chickenCat,
@@ -596,7 +619,6 @@ function generateChicken(initial = false) {
       label: "chicken",
     }
   );
-  console.log(chicken);
   // chicken.setCollisionCategory(this.chickenCat);
 
   chicken._sprite = this.add.sprite(600, 370);
@@ -694,5 +716,5 @@ function updateWater(delta) {
 
 function end() {
   this.gameIsActive = false;
-  this.endText.setText('Game aviaire');
+  this.endText.setText("Game aviaire");
 }
