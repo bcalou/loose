@@ -109,6 +109,7 @@ var rnd = Phaser.Math.RND;
 function preload() {
   for (let i = 1; i <= 9; i++) {
     this.load.audio('cri_' + i, 'sound/cri_' + i + '.mp3');
+    this.load.audio('player_' + i, 'sound/player_' + i + '.mp3');
   }
 
   for (let i = 1; i <= 7; i++) {
@@ -463,6 +464,8 @@ function adjustSpringLength(player, delta) {
 }
 
 function jump(player) {
+  this.sound.play('player_' + rnd.between(1, 9), { volume: 0.5 });
+
   this.matter.applyForce(
     player,
     player._leftStick
