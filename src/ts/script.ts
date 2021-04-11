@@ -1,5 +1,4 @@
-import "phaser";
-import { deflate } from "zlib";
+import 'phaser';
 /**
  *
  * !!!OK!!! capter les inputs manette
@@ -148,7 +147,13 @@ function create() {
     .text(32, 32)
     .setScrollFactor(0)
     .setFontSize(32)
-    .setColor("#000000");
+    .setColor('#000000');
+
+  this.endText = this.add
+    .text(config.width / 2 - 250, config.height / 2 - 100)
+    .setScrollFactor(0)
+    .setFontSize(64)
+    .setColor('#000000');
 
   createAnimations.call(this);
   createScene.call(this);
@@ -516,6 +521,10 @@ function createChickens() {
 }
 
 function generateChicken(initial = false) {
+  if (!this.gameIsActive) {
+    return;
+  }
+
   var targetY = Phaser.Math.Between(
     CHICKEN_TARGET_Y.min + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET,
     CHICKEN_TARGET_Y.max + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET
@@ -639,5 +648,5 @@ function updateWater(delta) {
 
 function end() {
   this.gameIsActive = false;
-  console.log("game over");
+  this.endText.setText('Game aviaire');
 }
