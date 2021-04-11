@@ -1,4 +1,4 @@
-import "phaser";
+import 'phaser';
 /**
  *
  * !!!OK!!! capter les inputs manette
@@ -42,7 +42,7 @@ var config = {
   height: 1080,
   scale: {
     mode: Phaser.Scale.FIT,
-    parent: "poulepull",
+    parent: 'poulepull',
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 1920,
     height: 1080,
@@ -50,9 +50,9 @@ var config = {
   input: {
     gamepad: true,
   },
-  backgroundColor: "#53d8ed",
+  backgroundColor: '#53d8ed',
   physics: {
-    default: "matter",
+    default: 'matter',
     matter: {
       gravity: {
         y: 0.8,
@@ -104,26 +104,26 @@ var rnd = Phaser.Math.RND;
 
 function preload() {
   for (let i = 1; i <= 9; i++) {
-    this.load.audio("cri_" + i, "sound/cri_" + i + ".mp3");
+    this.load.audio('cri_' + i, 'sound/cri_' + i + '.mp3');
   }
 
   for (let i = 1; i <= 7; i++) {
-    this.load.audio("death_" + i, "sound/death_" + i + ".mp3");
+    this.load.audio('death_' + i, 'sound/death_' + i + '.mp3');
   }
 
-  this.load.audio("music", "sound/music.mp3");
-  this.load.audio("wings", "sound/wings.mp3");
-  this.load.audio("bg", "sound/bg.mp3");
+  this.load.audio('music', 'sound/music.mp3');
+  this.load.audio('wings', 'sound/wings.mp3');
+  this.load.audio('bg', 'sound/bg.mp3');
 
-  this.load.image("player", "img/player.png");
-  this.load.image("batte", "img/batte.png");
-  this.load.image("grabber", "img/grabber.png");
-  this.load.image("grenier", "img/grenier.png");
-  this.load.image("pieds", "img/pieds.png");
-  this.load.image("sticky", "img/sticky.png");
-  this.load.image("appuyezPourCommencer", "img/appuyezPourCommencer.png");
+  this.load.image('player', 'img/player.png');
+  this.load.image('batte', 'img/batte.png');
+  this.load.image('grabber', 'img/grabber.png');
+  this.load.image('grenier', 'img/grenier.png');
+  this.load.image('pieds', 'img/pieds.png');
+  this.load.image('sticky', 'img/sticky.png');
+  this.load.image('appuyezPourCommencer', 'img/appuyezPourCommencer.png');
 
-  this.load.spritesheet("chicken", "img/chicken.png", {
+  this.load.spritesheet('chicken', 'img/chicken.png', {
     frameWidth: 200,
     frameHeight: 200,
   });
@@ -131,20 +131,21 @@ function preload() {
 
 function create() {
   this.mainGroup = this.matter.world.nextGroup(true);
+  this.gameIsActive = false;
 
   this.text = this.add
     .text(32, 32)
     .setScrollFactor(0)
     .setFontSize(32)
-    .setColor("#000000");
+    .setColor('#000000');
 
   createAnimations.call(this);
   createScene.call(this);
 
   //fullscreen avec F
-  var FKey = this.input.keyboard.addKey("F");
+  var FKey = this.input.keyboard.addKey('F');
   FKey.on(
-    "down",
+    'down',
     function () {
       if (this.scale.isFullscreen) {
         this.scale.stopFullscreen();
@@ -159,12 +160,12 @@ function create() {
     this.add.image(
       config.width / 2,
       config.height + config.height / 2 + 250,
-      "grenier"
+      'grenier'
     );
   }
 
   createPlayers.call(this);
-  this.cameras.main.scrollY = config.height;
+  this.cameras.main.scrollY = config.height + 350;
   //debug
   this.matter.add.mouseSpring();
 
@@ -183,32 +184,33 @@ function create() {
   //this.cameras.main.setDeadzone(this.scale.width * 1.5);
   //this.matter.world.setBounds(0, -100 * config.height, config.width, config.height * 100);
   createChickens.call(this);
-  this.sound.play("music", { volume: 0.15, loop: true });
-  this.sound.play("wings", { volume: 0.5, loop: true });
-  this.sound.play("bg", { volume: 0.3, loop: true });
+  generateInitialChicken.call(this);
+
+  this.sound.play('music', { volume: 0.15, loop: true });
+  this.sound.play('wings', { volume: 0.5, loop: true });
+  this.sound.play('bg', { volume: 0.3, loop: true });
 }
 
 function update(time, delta) {
-  this.text.setText(
-    this.scores.map((score, index) => {
-      return `Joueur ${index + 1} : ${score.points / 100}m`;
-    })
-  );
-
+  updatePlayers.call(this, delta);
   if (Math.random() < delta / CHICKEN_INTERVAL_MS) {
     generateChicken.call(this);
   }
-
-  updatePlayers.call(this, delta);
   updateChicken.call(this);
 
-  // this.cameras.main.scrollY = this.cameras.main.scrollY - delta * CAMERA_SPEED;
-  updateCamera.call(this, delta);
+  if (this.gameIsActive) {
+    updateCamera.call(this, delta);
+
+    this.text.setText(
+      this.scores.map((score, index) => {
+        return `Joueur ${index + 1} : ${score.points / 100}m`;
+      })
+    );
+  }
 }
 
 function updateCamera(delta) {
   if (this.players.length) {
-    console.log(this.players[0].position.y);
     let Ymean = Phaser.Math.Average(
       this.players.map((player) =>
         Math.min(player.position.y, CAMERA_INITIAL_POSITION)
@@ -227,32 +229,32 @@ function createAnimations() {
   const framerate = 15;
 
   this.anims.create({
-    key: "idle",
-    frames: this.anims.generateFrameNumbers("chicken", {
+    key: 'idle',
+    frames: this.anims.generateFrameNumbers('chicken', {
       frames: [0, 1],
     }),
     frameRate: framerate,
     repeat: -1,
   });
   this.anims.create({
-    key: "flap",
-    frames: this.anims.generateFrameNumbers("chicken", {
+    key: 'flap',
+    frames: this.anims.generateFrameNumbers('chicken', {
       frames: [1, 2, 3, 4, 5],
     }),
     frameRate: framerate * 2,
     repeat: 0,
   });
   this.anims.create({
-    key: "flop",
-    frames: this.anims.generateFrameNumbers("chicken", {
+    key: 'flop',
+    frames: this.anims.generateFrameNumbers('chicken', {
       frames: [6, 7],
     }),
     frameRate: framerate,
     repeat: 0,
   });
   this.anims.create({
-    key: "full",
-    frames: this.anims.generateFrameNumbers("chicken"),
+    key: 'full',
+    frames: this.anims.generateFrameNumbers('chicken'),
     frameRate: framerate,
     repeat: -1,
   });
@@ -266,6 +268,16 @@ function updatePlayers(delta) {
     checkGrabberDistance.call(this, player);
 
     var pad = player._pad;
+
+    if (pad.A) {
+      if (!this.gameIsActive) {
+        this.gameIsActive = true;
+      }
+    }
+
+    if (!this.gameIsActive) {
+      return;
+    }
 
     player._leftStick = new Phaser.Math.Vector2(
       pad.axes[0].getValue(),
@@ -322,7 +334,7 @@ function checkIfDead(player) {
     }
     this.matter.world.remove(player);
     this.players = this.players.filter((_player) => _player.id !== player.id);
-    this.sound.play("death_" + rnd.between(1, 7), { volume: 0.5 });
+    this.sound.play('death_' + rnd.between(1, 7), { volume: 0.5 });
 
     if (this.players.length === 0) {
       end.call(this);
@@ -346,7 +358,7 @@ function checkGrabberDistance(player) {
 function createPlayers() {
   this.players = [];
   this.scores = [];
-  this.input.gamepad.once("connected", (pad) => {
+  this.input.gamepad.once('connected', (pad) => {
     this.input.gamepad.gamepads.forEach((pad, index) => {
       createPlayer.call(this, pad, index);
     });
@@ -371,7 +383,7 @@ function createPlayer(pad, index) {
   player._sprite = this.add.image(
     config.width * startingPositions[index],
     this.cameras.main.y + 1080 - PLAYER_HEIGHT / 2,
-    "player"
+    'player'
   );
 
   player._pad = pad;
@@ -389,7 +401,7 @@ function fire(player) {
     {
       onCollideCallback: (collision) => {
         // Si l'élément visé est chicken
-        if (collision.bodyA.label === "chicken") {
+        if (collision.bodyA.label === 'chicken') {
           if (player._grabber) {
             this.matter.world.remove(player._grabber);
             delete player._grabber;
@@ -438,25 +450,9 @@ function adjustSpringLength(player, delta) {
     SPRING_MIN_LENGTH,
     SPRING_MAX_LENGTH
   );
-
-  // if (player._spring.length === SPRING_MIN_LENGTH) {
-  //   reachChicken.call(this, player);
-  // }
-}
-
-function reachChicken(player) {
-  const chicken = player._spring.bodyB;
-
-  chicken._targetY += 1000;
-
-  this.matter.world.remove(player._spring);
-  delete player._spring;
-
-  jump.call(this, player);
 }
 
 function jump(player) {
-  console.log(player.velocity);
   this.matter.applyForce(
     player,
     player._leftStick
@@ -493,24 +489,30 @@ function attachPlayerToChicken(player, chicken) {
     SPRING_STIFFNESS
   );
 
-  this.sound.play("cri_" + rnd.between(1, 9), { volume: 0.5 });
+  this.sound.play('cri_' + rnd.between(1, 9), { volume: 0.5 });
 }
 
 function createChickens() {
   this.chickens = [];
 }
 
-function generateChicken() {
+function generateChicken(initial = false) {
   var targetY = Phaser.Math.Between(
     CHICKEN_TARGET_Y.min + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET,
     CHICKEN_TARGET_Y.max + this.cameras.main.scrollY - CHICKEN_SPAWN_OFFSET
   );
 
+  if (initial) {
+    targetY -= config.height;
+  }
+
   if (targetY > CHICKEN_MIN_SPAWN_HEIGHT) {
     return;
   }
 
-  var chickenX = rnd.pick([-CHICKEN_SIZE, config.width + CHICKEN_SIZE]);
+  var chickenX = initial
+    ? rnd.between(-CHICKEN_SIZE, config.width + CHICKEN_SIZE)
+    : rnd.pick([-CHICKEN_SIZE, config.width + CHICKEN_SIZE]);
 
   var chicken = this.matter.add.circle(
     chickenX,
@@ -520,12 +522,12 @@ function generateChicken() {
       collisionFilter: {
         group: this.mainGroup,
       },
-      label: "chicken",
+      label: 'chicken',
     }
   );
 
   chicken._sprite = this.add.sprite(600, 370);
-  chicken._sprite.play("full");
+  chicken._sprite.play('full');
 
   chicken._targetY = targetY;
   chicken._forceVector = {
@@ -534,6 +536,14 @@ function generateChicken() {
   };
 
   this.chickens.push(chicken);
+}
+
+function generateInitialChicken() {
+  for (let i = 0; i < 20; i++) {
+    setTimeout(() => {
+      generateChicken.call(this, true);
+    }, Math.random() * 1000);
+  }
 }
 
 function updateChicken() {
@@ -567,11 +577,11 @@ function updateChicken() {
       if (chicken.position.y > chicken._targetY) {
         // console.log("chicken.position.y", chicken.position.y);
         this.matter.applyForce(chicken, chicken._forceVector);
-        chicken._sprite.play("flap");
+        chicken._sprite.play('flap');
       } else if (chicken._prevVelocityY < 0 && chicken.velocity.y > 0) {
         //apogée
-        chicken._sprite.play("flop");
-        chicken._sprite.anims.chain("idle");
+        chicken._sprite.play('flop');
+        chicken._sprite.anims.chain('idle');
       }
     }
 
@@ -581,5 +591,5 @@ function updateChicken() {
 }
 
 function end() {
-  console.log("game over");
+  console.log('game over');
 }
