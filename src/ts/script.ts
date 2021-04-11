@@ -142,6 +142,10 @@ function preload() {
 
 function create() {
   this.mainGroup = this.matter.world.nextGroup(true);
+  this.chickenCat = this.matter.world.nextCategory();
+  this.playerCat = this.matter.world.nextCategory();
+  this.stickyCat = this.matter.world.nextCategory();
+
   this.gameIsActive = false;
 
   this.text = this.add
@@ -274,11 +278,6 @@ function createAnimations() {
 
 function updatePlayers(delta) {
   this.players.forEach((player) => {
-    updatePlayerScore.call(this, player);
-    updatePlayerSprite.call(this, player);
-    checkIfDead.call(this, player);
-    checkGrabberDistance.call(this, player);
-
     var pad = player._pad;
 
     if (pad.A) {
@@ -301,6 +300,11 @@ function updatePlayers(delta) {
       pad.axes[2].getValue(),
       pad.axes[3].getValue()
     );
+
+    updatePlayerScore.call(this, player);
+    updatePlayerSprite.call(this, player);
+    checkIfDead.call(this, player);
+    checkGrabberDistance.call(this, player);
 
     if (player._grabber) {
       if (pad.buttons[6].value < PAD_TRIGGER_THRESHOLD) {
@@ -325,6 +329,16 @@ function updatePlayerSprite(player) {
   //SPRITE POSITION UPDATE
   player._sprite.setPosition(player.position.x, player.position.y);
   player._sprite.rotation = player.angle;
+
+  player._grabberSprite.setPosition(player.position.x, player.position.y);
+  player._grabberSprite.rotation = player._leftStick.angle();
+
+  if (player._stickySprite && player._grabber) {
+    player._stickySprite.setPosition(
+      player._grabber.position.x,
+      player._grabber.position.y
+    );
+  }
 }
 
 function updatePlayerScore(player) {
@@ -349,6 +363,10 @@ function checkIfDead(player) {
       this.matter.world.remove(player._spring);
     }
     player._sprite.destroy();
+    player._grabberSprite.destroy();
+    if (player._stickySprite) {
+      player._stickySprite.destroy();
+    }
     this.matter.world.remove(player);
     this.players = this.players.filter((_player) => _player.id !== player.id);
     this.sound.play("death_" + rnd.between(1, 7), { volume: 0.5 });
@@ -369,6 +387,7 @@ function checkGrabberDistance(player) {
   ) {
     this.matter.world.remove(player._grabber);
     delete player._grabber;
+    player._stickySprite.destroy();
   }
 }
 
@@ -385,23 +404,34 @@ function createPlayers() {
 function createPlayer(pad, index) {
   const startingPositions = [0.15, 0.85, 0.4, 0.6];
 
-  var player = this.matter.add.rectangle(
+  let playerPosition = new Phaser.Math.Vector2(
     config.width * startingPositions[index],
-    this.cameras.main.y + 1080 - PLAYER_HEIGHT / 2,
+    this.cameras.main.y + 1080 - PLAYER_HEIGHT / 2
+  );
+
+  var player = this.matter.add.rectangle(
+    playerPosition.x,
+    playerPosition.y,
     PLAYER_WIDTH,
     PLAYER_HEIGHT,
     {
       collisionFilter: {
-        group: this.mainGroup,
+        category: this.playerCat,
       },
     }
   );
 
+  // player.setCollisionCategory(this.playerCat);
+
   player._sprite = this.add.image(
-    config.width * startingPositions[index],
-    this.cameras.main.y + 1080 - PLAYER_HEIGHT / 2,
+    playerPosition.x,
+    playerPosition.y,
     "player_" + (index + 1)
   );
+
+  player._grabberSprite = this.add
+    .sprite(playerPosition.x, playerPosition.y, `grabber_${index + 1}`)
+    .setOrigin(0, 0.5);
 
   player._pad = pad;
   player._score = this.scores[index] = { points: 0 };
@@ -413,15 +443,20 @@ function createPlayer(pad, index) {
 function fire(player) {
   player._grabber = this.matter.add.circle(
     player.position.x,
-    player.position.y - PLAYER_HEIGHT / 2,
+    player.position.y,
     10,
     {
+      collisionFilter: {
+        category: this.stickyCat,
+        mask: this.chickenCat,
+      },
       onCollideCallback: (collision) => {
         // Si l'élément visé est chicken
         if (collision.bodyA.label === "chicken") {
           if (player._grabber) {
             this.matter.world.remove(player._grabber);
             delete player._grabber;
+            player._stickySprite.destroy();
           }
 
           // si ce n'est pas le chicken déjà grabbé
@@ -436,6 +471,15 @@ function fire(player) {
     }
   );
 
+  // player._grabber.setCollisionCategory(this.stickyCat);
+  // player._grabber.setCollidesWith([this.chickenCat]);
+
+  player._stickySprite = this.add.sprite(
+    player._grabber.position.x,
+    player._grabber.position.y,
+    "sticky"
+  );
+
   const grabberForce = player._leftStick
     .normalize()
     .multiply(
@@ -447,6 +491,7 @@ function fire(player) {
 function recallGrabber(player) {
   this.matter.world.remove(player._grabber);
   delete player._grabber;
+  player._stickySprite.destroy();
 }
 
 function release(player) {
@@ -505,7 +550,10 @@ function attachPlayerToChicken(player, chicken) {
         SPRING_ATTACHMENT_RATIO,
       SPRING_MIN_LENGTH
     ),
-    SPRING_STIFFNESS
+    SPRING_STIFFNESS,
+    {
+      pointA: { x: 0, y: -20 },
+    }
   );
 
   this.sound.play("cri_" + rnd.between(1, 9), { volume: 0.5 });
@@ -538,11 +586,13 @@ function generateChicken(initial = false) {
     CHICKEN_SIZE / 2,
     {
       collisionFilter: {
-        group: this.mainGroup,
+        category: this.chickenCat,
       },
       label: "chicken",
     }
   );
+  console.log(chicken);
+  // chicken.setCollisionCategory(this.chickenCat);
 
   chicken._sprite = this.add.sprite(600, 370);
   chicken._sprite.play("full");
