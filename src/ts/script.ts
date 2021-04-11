@@ -1,4 +1,5 @@
 import 'phaser';
+import { deflate } from 'zlib';
 /**
  *
  * !!!OK!!! capter les inputs manette
@@ -85,7 +86,7 @@ const CHICKEN_MIN_SPAWN_HEIGHT = 800;
 const PLAYER_WIDTH = 100;
 const PLAYER_HEIGHT = 150;
 const PLAYER_DEATH_OFFSET = 100;
-const PLAYER_JUMP_RATIO = 0.3;
+const PLAYER_JUMP_RATIO = 0.5;
 
 const MAX_GRABBER_DISTANCE = 900;
 const GRABBER_THROW_FORCE = 0.03;
@@ -98,6 +99,8 @@ const SPRING_STIFFNESS = 0.3;
 const SPRING_HORIZONTAL_MOVE_FACTOR = 0.01;
 
 const PAD_TRIGGER_THRESHOLD = 0.8;
+
+const WATER_SPEED = 0.05;
 
 var game: any = new Phaser.Game(config);
 var rnd = Phaser.Math.RND;
@@ -200,6 +203,7 @@ function update(time, delta) {
 
   if (this.gameIsActive) {
     updateCamera.call(this, delta);
+    updateWater.call(this, delta);
 
     this.text.setText(
       this.scores.map((score, index) => {
@@ -271,6 +275,7 @@ function updatePlayers(delta) {
 
     if (pad.A) {
       if (!this.gameIsActive) {
+        createWater.call(this);
         this.gameIsActive = true;
       }
     }
@@ -324,7 +329,10 @@ function updatePlayerScore(player) {
 function checkIfDead(player) {
   if (
     player.position.y >
-    this.cameras.main.scrollY + config.height + PLAYER_DEATH_OFFSET
+      this.cameras.main.scrollY + config.height + PLAYER_DEATH_OFFSET ||
+    (this.water &&
+      player.position.y >
+        this.water.y - this.water.height / 2 + PLAYER_HEIGHT / 2)
   ) {
     if (player._grabber) {
       this.matter.world.remove(player._grabber);
@@ -332,6 +340,7 @@ function checkIfDead(player) {
     if (player._spring) {
       this.matter.world.remove(player._spring);
     }
+    player._sprite.destroy();
     this.matter.world.remove(player);
     this.players = this.players.filter((_player) => _player.id !== player.id);
     this.sound.play('death_' + rnd.between(1, 7), { volume: 0.5 });
@@ -531,7 +540,7 @@ function generateChicken(initial = false) {
 
   chicken._targetY = targetY;
   chicken._forceVector = {
-    x: CHICKEN_WING_FORCE.x * (chickenX < 0 ? 1 : -1),
+    x: CHICKEN_WING_FORCE.x * (chickenX < config.width / 2 ? 1 : -1),
     y: CHICKEN_WING_FORCE.y,
   };
 
@@ -550,6 +559,21 @@ function updateChicken() {
   this.chickens.forEach((chicken) => {
     if (!chicken._prevVelocityY) {
       chicken._prevVelocityY = chicken.velocity.y;
+    }
+
+    // CHICKEN DROWNING
+    if (
+      this.water &&
+      chicken.position.y > this.water.y - this.water.height / 2
+    ) {
+      if (!chicken._dead) {
+        if (chicken.position.y < this.cameras.main.scrollY + config.height) {
+          this.sound.play('death_6');
+        } else {
+          console.log('die out');
+        }
+        chicken._dead = true;
+      }
     }
 
     //CHICKEN REMOVING
@@ -572,7 +596,7 @@ function updateChicken() {
 
     //CHICKEN FLAPPING
     //si ça tombe
-    if (chicken.velocity.y > 0) {
+    if (chicken.velocity.y > 0 && !chicken._dead) {
       //si c'est trop bas
       if (chicken.position.y > chicken._targetY) {
         // console.log("chicken.position.y", chicken.position.y);
@@ -590,6 +614,21 @@ function updateChicken() {
   });
 }
 
+function createWater() {
+  let waterGroup = this.matter.world.nextGroup(true);
+
+  this.water = this.add.rectangle(0, 1920, config.width * 2, config.height);
+
+  setTimeout(() => {
+    this.water.setFillStyle(0x2222dd, 0.8);
+  }, 1000);
+}
+
+function updateWater(delta) {
+  this.water.y -= delta * (WATER_SPEED + this.players[0]._score.points / 10000);
+}
+
 function end() {
+  this.gameIsActive = false;
   console.log('game over');
 }
