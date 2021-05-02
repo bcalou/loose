@@ -9,5 +9,154 @@
     <script src="http://localhost:1234/script.js"></script>
   </head>
 
-  <body id="poulepull" style="padding: 0; margin: 0; background: black"></body>
+  <body>
+    <div style="font-size: 30px; color: blueviolet">
+      <div>Voici le modèle !</div>
+      <img />
+    </div>
+
+    <div>
+      <input type="color" class="js-color-picker color-picker" />
+      <input type="range" class="js-line-range" min="1" max="72" value="1" />
+      <label class="js-range-value">1</label>Px
+      <canvas width="400" height="600" class="js-paint paint-canvas"></canvas>
+    </div>
+
+    <div class="livraison">
+      <div>
+        Livraison de la une dans&nbsp;
+        <span id="timer"></span>
+        &nbsp;secondes !
+
+        <div id="result"></div>
+      </div>
+    </div>
+  </body>
+
+  <style>
+    body {
+      display: flex;
+      height: 100vh;
+    }
+
+    body > div {
+      width: 50%;
+    }
+
+    canvas {
+      border: 3px solid black;
+    }
+
+    .paint-canvas {
+      border: 1px black solid;
+      display: block;
+      margin: 1rem;
+    }
+
+    .color-picker {
+      margin: 1rem 1rem 0 1rem;
+    }
+
+    .livraison {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 50px;
+      color: red;
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    }
+  </style>
+
+  <script>
+    const $img = document.querySelector('img');
+    const DELAY = 10;
+    let time = DELAY;
+    let round = 0;
+    setImg();
+    const $timer = document.getElementById('timer');
+    const $result = document.getElementById('result');
+    setInterval(() => {
+      time--;
+      setTime();
+
+      if (time < 0) {
+        end();
+      }
+    }, 1000);
+    setTime();
+    function setTime() {
+      $timer.innerHTML = time;
+    }
+
+    function setImg() {
+      $img.setAttribute('src', `${round}.jpg`);
+    }
+
+    function end() {
+      const score = compare();
+      $result.innerHTML = score * 100 + ' sur 100 ! Intolérable !';
+
+      next();
+    }
+
+    function next() {
+      round++;
+      time = DELAY;
+      setTime();
+      setImg();
+    }
+
+    function compare() {
+      return 0.32;
+    }
+
+    const paintCanvas = document.querySelector('.js-paint');
+    const context = paintCanvas.getContext('2d');
+    context.lineCap = 'round';
+
+    const colorPicker = document.querySelector('.js-color-picker');
+
+    colorPicker.addEventListener('change', (event) => {
+      context.strokeStyle = event.target.value;
+    });
+
+    const lineWidthRange = document.querySelector('.js-line-range');
+    const lineWidthLabel = document.querySelector('.js-range-value');
+
+    lineWidthRange.addEventListener('input', (event) => {
+      const width = event.target.value;
+      lineWidthLabel.innerHTML = width;
+      context.lineWidth = width;
+    });
+
+    let x = 0,
+      y = 0;
+    let isMouseDown = false;
+
+    const stopDrawing = () => {
+      isMouseDown = false;
+    };
+    const startDrawing = (event) => {
+      isMouseDown = true;
+      [x, y] = [event.offsetX, event.offsetY];
+    };
+    const drawLine = (event) => {
+      if (isMouseDown) {
+        const newX = event.offsetX;
+        const newY = event.offsetY;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(newX, newY);
+        context.stroke();
+        //[x, y] = [newX, newY];
+        x = newX;
+        y = newY;
+      }
+    };
+
+    paintCanvas.addEventListener('mousedown', startDrawing);
+    paintCanvas.addEventListener('mousemove', drawLine);
+    paintCanvas.addEventListener('mouseup', stopDrawing);
+    paintCanvas.addEventListener('mouseout', stopDrawing);
+  </script>
 </html>
